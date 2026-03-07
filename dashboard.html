@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="theme-color" content="#0a0a0a"/>
+  <title>WRB Boss Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    html,body{background:#0a0a0a;font-family:'Barlow',sans-serif;-webkit-font-smoothing:antialiased;}
+    ::-webkit-scrollbar{width:4px;}
+    ::-webkit-scrollbar-track{background:#111;}
+    ::-webkit-scrollbar-thumb{background:#C0500A;border-radius:2px;}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    @keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+    .fade{animation:fadeIn 0.3s ease;}
+    .slide{animation:slideUp 0.3s ease;}
+    .warn-pulse{animation:pulse 2s infinite;}
+  </style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+
+// ─── PHASE DEFINITIONS FOR ALL 3 CHECKLIST TYPES ─────────────────────────────
+const BATH_PHASES = [
+  {id:"ph1",label:"Pre-Construction",steps:[{id:"s1",num:1,title:"Preliminary Preparation",tasks:8},{id:"s2",num:2,title:"Site Protection",tasks:5}]},
+  {id:"ph2",label:"Demolition",steps:[{id:"s3",num:3,title:"Demo + Disposal",tasks:9}]},
+  {id:"ph3",label:"Rough Construction",steps:[{id:"s4",num:4,title:"Rough Framing",tasks:5},{id:"s5",num:5,title:"Windows",tasks:2},{id:"s6",num:6,title:"HVAC — Exhaust Fan",tasks:3},{id:"s7",num:7,title:"Plumbing Rough",tasks:6},{id:"s8",num:8,title:"Electrical Rough",tasks:4}]},
+  {id:"ph4",label:"Inspections & Enclosure",steps:[{id:"s9",num:9,title:"PM Pre-Inspection",tasks:10},{id:"s10",num:10,title:"Rough Inspection",tasks:6},{id:"s11",num:11,title:"Insulation",tasks:2},{id:"s12",num:12,title:"Insulation Inspection",tasks:2}]},
+  {id:"ph5",label:"Wall Finishes",steps:[{id:"s13",num:13,title:"Wallboard",tasks:2},{id:"s14",num:14,title:"Waterproofing",tasks:5},{id:"s15",num:15,title:"Plaster/Taping",tasks:2}]},
+  {id:"ph6",label:"Finish Installations",steps:[{id:"s16",num:16,title:"Doors & Trim",tasks:3},{id:"s17",num:17,title:"Tile Installation",tasks:9},{id:"s18",num:18,title:"Flooring",tasks:1},{id:"s19",num:19,title:"Painting",tasks:3},{id:"s20",num:20,title:"Electrical Finish",tasks:4},{id:"s21",num:21,title:"Plumbing Finish",tasks:7},{id:"s22",num:22,title:"Accessories & Hardware",tasks:4}]},
+  {id:"ph7",label:"Project Closeout",steps:[{id:"s23",num:23,title:"Punch List",tasks:4},{id:"s24",num:24,title:"Final Inspection",tasks:3},{id:"s25",num:25,title:"Final Cleaning",tasks:2},{id:"s26",num:26,title:"Project Completion",tasks:5}]},
+];
+
+const KITCHEN_PHASES = [
+  {id:"ph1",label:"Pre-Construction",steps:[{id:"s1",num:1,title:"Preliminary Preparation",tasks:11},{id:"s2",num:2,title:"Site Protection",tasks:6}]},
+  {id:"ph2",label:"Demolition",steps:[{id:"s3",num:3,title:"Demo + Disposal",tasks:11}]},
+  {id:"ph3",label:"Rough Construction",steps:[{id:"s4",num:4,title:"Rough Framing",tasks:6},{id:"s5",num:5,title:"Windows & Exterior",tasks:3},{id:"s6",num:6,title:"HVAC — Range Hood",tasks:5},{id:"s7",num:7,title:"Plumbing Rough",tasks:6},{id:"s8",num:8,title:"Electrical Rough",tasks:8}]},
+  {id:"ph4",label:"Inspections & Enclosure",steps:[{id:"s9",num:9,title:"PM Pre-Inspection",tasks:9},{id:"s10",num:10,title:"Rough Inspection",tasks:6},{id:"s11",num:11,title:"Insulation",tasks:3},{id:"s12",num:12,title:"Insulation Inspection",tasks:2}]},
+  {id:"ph5",label:"Wall & Ceiling Finishes",steps:[{id:"s13",num:13,title:"Wallboard",tasks:3},{id:"s14",num:14,title:"Plaster/Taping",tasks:4}]},
+  {id:"ph6",label:"Cabinet & Finish",steps:[{id:"s15",num:15,title:"Cabinet Installation",tasks:10},{id:"s16",num:16,title:"Countertop Template",tasks:5},{id:"s17",num:17,title:"Doors & Trim",tasks:3},{id:"s18",num:18,title:"Flooring",tasks:4},{id:"s19",num:19,title:"Countertop Install",tasks:5},{id:"s20",num:20,title:"Backsplash Tile",tasks:5},{id:"s21",num:21,title:"Painting",tasks:3},{id:"s22",num:22,title:"Electrical Finish",tasks:6},{id:"s23",num:23,title:"Plumbing Finish",tasks:6},{id:"s24",num:24,title:"Appliances",tasks:6},{id:"s25",num:25,title:"Cabinet Hardware",tasks:5}]},
+  {id:"ph7",label:"Project Closeout",steps:[{id:"s26",num:26,title:"Punch List",tasks:8},{id:"s27",num:27,title:"Final Inspection",tasks:3},{id:"s28",num:28,title:"Final Cleaning",tasks:4},{id:"s29",num:29,title:"Project Completion",tasks:6}]},
+];
+
+const FG_PHASES = [
+  {id:"ph1",label:"Pre-Construction",steps:[{id:"s1",num:1,title:"Preliminary Preparation",tasks:11},{id:"s2",num:2,title:"Survey & Architectural",tasks:5},{id:"s3",num:3,title:"Foundation",tasks:9}]},
+  {id:"ph2",label:"Rough Construction",steps:[{id:"s4",num:4,title:"Demolition",tasks:9},{id:"s5",num:5,title:"Rough Framing",tasks:8},{id:"s6",num:6,title:"Roofing",tasks:8},{id:"s7",num:7,title:"Siding & Exterior",tasks:6},{id:"s8",num:8,title:"Windows & Doors",tasks:6},{id:"s9",num:9,title:"HVAC Rough",tasks:7},{id:"s10",num:10,title:"Plumbing Rough",tasks:8},{id:"s11",num:11,title:"Electrical Rough",tasks:7}]},
+  {id:"ph3",label:"Affidavit B & Inspections",steps:[{id:"s12",num:12,title:"PM Pre-Inspection",tasks:10},{id:"s13",num:13,title:"Rough Inspection",tasks:6},{id:"s14",num:14,title:"Insulation",tasks:6},{id:"s15",num:15,title:"Insulation Inspection",tasks:3}]},
+  {id:"ph4",label:"Interior Finishes Ph1",steps:[{id:"s16",num:16,title:"Wallboard & Plaster",tasks:6},{id:"s17",num:17,title:"Doors & Trim",tasks:7},{id:"s18",num:18,title:"Tile Work",tasks:10},{id:"s19",num:19,title:"Flooring",tasks:6}]},
+  {id:"ph5",label:"Interior Finishes Ph2",steps:[{id:"s20",num:20,title:"Painting",tasks:6},{id:"s21",num:21,title:"Cabinet Installation",tasks:6},{id:"s22",num:22,title:"Countertops",tasks:6},{id:"s23",num:23,title:"Electrical Finish",tasks:7},{id:"s24",num:24,title:"Plumbing Finish",tasks:8},{id:"s25",num:25,title:"HVAC Finish",tasks:6},{id:"s26",num:26,title:"Appliances",tasks:6}]},
+  {id:"ph6",label:"Exterior Work",steps:[{id:"s27",num:27,title:"Deck & Pergola",tasks:6},{id:"s28",num:28,title:"Landscaping & Grading",tasks:6}]},
+  {id:"ph7",label:"Project Closeout",steps:[{id:"s29",num:29,title:"Punch List",tasks:11},{id:"s30",num:30,title:"Final Inspection",tasks:4},{id:"s31",num:31,title:"Final Cleaning",tasks:6},{id:"s32",num:32,title:"Project Completion",tasks:7}]},
+];
+
+const KITCHEN_DESIGN_PHASES = [
+  {id:"ph1",label:"Lead & Inquiry",steps:[{id:"kd1",num:1,title:"Lead Intake",tasks:6}]},
+  {id:"ph2",label:"Design Consultation",steps:[{id:"kd2",num:2,title:"Initial Consultation",tasks:7},{id:"kd3",num:3,title:"Measurements & Site Visit",tasks:6}]},
+  {id:"ph3",label:"Cabinet Selection & Quote",steps:[{id:"kd4",num:4,title:"Design Presentation",tasks:6},{id:"kd5",num:5,title:"Cabinet Selection",tasks:7},{id:"kd6",num:6,title:"Quote & Proposal",tasks:6}]},
+  {id:"ph4",label:"Contract & Deposit",steps:[{id:"kd7",num:7,title:"Contract Signing",tasks:5},{id:"kd8",num:8,title:"Deposit & Order",tasks:5}]},
+  {id:"ph5",label:"Order & Lead Time",steps:[{id:"kd9",num:9,title:"Order Placement",tasks:6},{id:"kd10",num:10,title:"Lead Time Tracking",tasks:5}]},
+  {id:"ph6",label:"Installation Scheduling",steps:[{id:"kd11",num:11,title:"Pre-Install Coordination",tasks:6},{id:"kd12",num:12,title:"Install Schedule Confirmed",tasks:5}]},
+  {id:"ph7",label:"Delivery & Install",steps:[{id:"kd13",num:13,title:"Delivery & Inspection",tasks:6},{id:"kd14",num:14,title:"Cabinet Installation",tasks:7}]},
+  {id:"ph8",label:"Final Walkthrough & Payment",steps:[{id:"kd15",num:15,title:"Final Walkthrough",tasks:6},{id:"kd16",num:16,title:"Closeout & Payment",tasks:5}]},
+];
+
+// ─── CHECKLIST CONFIGS ────────────────────────────────────────────────────────
+const CHECKLISTS = [
+  { key:"bath",   label:"Bathroom",          color:"#C0500A", icon:"🚿", phases:BATH_PHASES,           keyPMs:"wrb_bath_pms_v1",   keyProjects:(pm)=>`wrb_bath_plist_${pm}`,   keyProject:(pm,pid)=>`wrb_bath_proj_${pm}_${pid}` },
+  { key:"kitchen",label:"Kitchen",           color:"#1A7A4A", icon:"🍳", phases:KITCHEN_PHASES,        keyPMs:"wrb_kitchen_pms_v1",keyProjects:(pm)=>`wrb_kitchen_plist_${pm}`,keyProject:(pm,pid)=>`wrb_kitchen_proj_${pm}_${pid}` },
+  { key:"fg",     label:"Full Gut / New",    color:"#E8763A", icon:"🏗️", phases:FG_PHASES,             keyPMs:"wrb_fg_pms_v1",     keyProjects:(pm)=>`wrb_fg_plist_${pm}`,     keyProject:(pm,pid)=>`wrb_fg_proj_${pm}_${pid}` },
+  { key:"kd",     label:"Kitchen Design",    color:"#2E86C1", icon:"🎨", phases:KITCHEN_DESIGN_PHASES, keyPMs:"wrb_kd_pms_v1",     keyProjects:(pm)=>`wrb_kd_plist_${pm}`,     keyProject:(pm,pid)=>`wrb_kd_proj_${pm}_${pid}` },
+];
+
+// ─── STORAGE ──────────────────────────────────────────────────────────────────
+function lsGet(k){ try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;} }
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function calcProgress(tasks, phases) {
+  let t=0,d=0;
+  phases.forEach(ph=>ph.steps.forEach(st=>{
+    const count = st.tasks;
+    for(let i=0;i<count;i++){t++;if(tasks[st.id]?.[i])d++;}
+  }));
+  return t===0?0:Math.round((d/t)*100);
+}
+
+function getWarnings(tasks, steps, phases) {
+  const warnings = [];
+  phases.forEach(ph=>{
+    ph.steps.forEach(st=>{
+      const taskArr = tasks[st.id]||[];
+      const done = taskArr.filter(Boolean).length;
+      const total = st.tasks;
+      const stepData = steps?.[st.id];
+      // Warning: step started (some tasks done) but not complete and no notes
+      if(done>0 && done<total && !stepData?.notes && !stepData?.startDate){
+        warnings.push({type:"incomplete", msg:`Step ${st.num}: "${st.title}" — started but not complete, no notes logged`, phase:ph.label});
+      }
+      // Warning: pre-inspection steps not done
+      if(st.title.toLowerCase().includes("pre-inspection") && done<total){
+        warnings.push({type:"critical", msg:`⛔ Step ${st.num}: PM Pre-Inspection not completed`, phase:ph.label});
+      }
+    });
+  });
+  return warnings;
+}
+
+function getMissingNotes(steps, phases) {
+  const missing = [];
+  phases.forEach(ph=>{
+    ph.steps.forEach(st=>{
+      const sd = steps?.[st.id];
+      if(sd && (sd.startDate||sd.completeDate) && !sd.notes){
+        missing.push(`Step ${st.num} "${st.title}" has date but no notes`);
+      }
+    });
+  });
+  return missing;
+}
+
+// ─── LOAD ALL DATA ────────────────────────────────────────────────────────────
+function loadAllData() {
+  const result = [];
+  CHECKLISTS.forEach(cl=>{
+    const pms = lsGet(cl.keyPMs)||[];
+    pms.forEach(pm=>{
+      const projectIds = lsGet(cl.keyProjects(pm))||[];
+      projectIds.forEach(pid=>{
+        const proj = lsGet(cl.keyProject(pm,pid));
+        if(!proj) return;
+        const pct = calcProgress(proj.tasks||{}, cl.phases);
+        const warnings = getWarnings(proj.tasks||{}, proj.steps||{}, cl.phases);
+        const missingNotes = getMissingNotes(proj.steps||{}, cl.phases);
+        result.push({ cl, pm, pid, proj, pct, warnings, missingNotes });
+      });
+    });
+  });
+  return result;
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render() {
+  const allData = loadAllData();
+  const app = document.getElementById('app');
+
+  // Summary stats
+  const totalProjects = allData.length;
+  const totalWarnings = allData.reduce((s,d)=>s+d.warnings.length,0);
+  const avgProgress = totalProjects===0?0:Math.round(allData.reduce((s,d)=>s+d.pct,0)/totalProjects);
+  const completeProjects = allData.filter(d=>d.pct===100).length;
+
+  // Group by PM
+  const byPM = {};
+  allData.forEach(d=>{
+    const key = `${d.cl.key}::${d.pm}`;
+    if(!byPM[key]) byPM[key]={ pm:d.pm, cl:d.cl, projects:[] };
+    byPM[key].projects.push(d);
+  });
+
+  // Filter state
+  const filter = window._dashFilter||'all';
+  const search = window._dashSearch||'';
+
+  let filteredData = allData.filter(d=>{
+    if(filter!=='all' && d.cl.key!==filter) return false;
+    if(search && !d.proj.name.toLowerCase().includes(search.toLowerCase()) && !d.pm.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  app.innerHTML = `
+    <div style="min-height:100vh;background:#0a0a0a;">
+
+      <!-- HEADER -->
+      <div style="background:#111;border-bottom:2px solid #C0500A;position:sticky;top:0;z-index:100;">
+        <div style="max-width:900px;margin:0 auto;padding:12px 16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="background:#C0500A;width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:14px;color:#fff;flex-shrink:0;">WRB</div>
+              <div>
+                <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:18px;color:#fff;letter-spacing:1px;line-height:1.1;">BOSS DASHBOARD</div>
+                <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;color:#C0500A;letter-spacing:2px;">WR BUILDERS INC — OWNER VIEW</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              ${totalWarnings>0?`<div style="background:#2a0a0a;border:1px solid #C0392B44;border-radius:6px;padding:4px 10px;font-family:'Barlow Condensed',sans-serif;font-size:12px;color:#C0392B;font-weight:700;">⚠ ${totalWarnings} WARNING${totalWarnings!==1?'S':''}</div>`:''}
+              <button onclick="refreshDash()" style="background:none;border:1px solid #2a2a2a;border-radius:6px;padding:5px 12px;color:#555;font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:1px;cursor:pointer;">↻ REFRESH</button>
+            </div>
+          </div>
+
+          <!-- STAT PILLS -->
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+            ${[
+              [totalProjects,'ACTIVE PROJECTS','#C0500A'],
+              [completeProjects,'COMPLETED','#1A7A4A'],
+              [avgProgress+'%','AVG PROGRESS','#2E86C1'],
+              [totalWarnings,'WARNINGS','#C0392B'],
+            ].map(([v,l,c])=>`
+              <div style="background:#161616;border:1px solid #222;border-radius:6px;padding:6px 12px;display:flex;align-items:baseline;gap:5px;">
+                <span style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:18px;color:${c};line-height:1;">${v}</span>
+                <span style="font-family:'Barlow Condensed',sans-serif;font-size:9px;color:#444;letter-spacing:1px;">${l}</span>
+              </div>
+            `).join('')}
+          </div>
+
+          <!-- FILTERS + SEARCH -->
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <div style="display:flex;gap:4px;">
+              ${[['all','ALL'],['bath','🚿'],['kitchen','🍳'],['fg','🏗️'],['kd','🎨']].map(([k,l])=>`
+                <button onclick="setFilter('${k}')" style="padding:4px 10px;background:${filter===k?'#C0500A':'#161616'};border:1px solid ${filter===k?'#C0500A':'#2a2a2a'};border-radius:5px;color:${filter===k?'#fff':'#555'};font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:1px;cursor:pointer;">${l}</button>
+              `).join('')}
+            </div>
+            <input id="dashSearch" value="${search}" oninput="setSearch(this.value)" placeholder="Search PM or project..." style="flex:1;min-width:150px;background:#161616;border:1px solid #2a2a2a;border-radius:6px;padding:5px 10px;color:#ddd;font-size:12px;outline:none;font-family:'Barlow',sans-serif;"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONTENT -->
+      <div style="max-width:900px;margin:0 auto;padding:16px;">
+
+        ${filteredData.length===0?`
+          <div style="text-align:center;padding:64px 0;">
+            <div style="font-size:36px;margin-bottom:12px;">📋</div>
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:16px;color:#333;letter-spacing:1px;">NO DATA FOUND</div>
+            <div style="font-size:12px;color:#222;margin-top:6px;">PMs need to open their checklists and start logging progress</div>
+          </div>
+        `:filteredData.map(d=>`
+          <div style="background:#141414;border:1px solid ${d.warnings.length>0?'#C0392B33':d.pct===100?d.cl.color+'44':'#1e1e1e'};border-radius:10px;margin-bottom:10px;overflow:hidden;">
+
+            <!-- Project header -->
+            <div style="padding:14px 16px;border-bottom:1px solid #1a1a1a;">
+              <div style="display:flex;align-items:flex-start;gap:10px;">
+                <!-- Type icon -->
+                <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:7px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${d.cl.icon}</div>
+                <div style="flex:1;min-width:0;">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:2px;">
+                    <span style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:16px;color:#e0e0e0;letter-spacing:0.5px;">${d.proj.name}</span>
+                    <span style="font-size:9px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:3px;background:${d.cl.color}22;color:${d.cl.color};border:1px solid ${d.cl.color}44;">${d.cl.label.toUpperCase()}</span>
+                    ${d.pct===100?`<span style="font-size:9px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:3px;background:#1A7A4A22;color:#1A7A4A;border:1px solid #1A7A4A44;">✓ COMPLETE</span>`:''}
+                    ${d.warnings.length>0?`<span class="warn-pulse" style="font-size:9px;font-family:'Barlow Condensed',sans-serif;font-weight:700;letter-spacing:1px;padding:2px 6px;border-radius:3px;background:#C0392B22;color:#C0392B;border:1px solid #C0392B44;">⚠ ${d.warnings.length} WARNING${d.warnings.length!==1?'S':''}</span>`:''}
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                    ${d.proj.address?`<span style="font-size:11px;color:#555;">${d.proj.address}</span>`:''}
+                    <span style="font-size:11px;color:#444;font-family:'Barlow Condensed',sans-serif;">PM: <span style="color:#888;">${d.pm}</span></span>
+                    <span style="font-size:11px;color:#333;font-family:'Barlow Condensed',sans-serif;">Created: ${d.proj.createdAt}</span>
+                  </div>
+                </div>
+                <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:24px;color:${d.pct===100?d.cl.color:'#ddd'};line-height:1;flex-shrink:0;">${d.pct}%</div>
+              </div>
+
+              <!-- Phase progress bar row -->
+              <div style="margin-top:12px;">
+                <div style="display:flex;gap:3px;margin-bottom:3px;">
+                  ${d.cl.phases.map(ph=>{
+                    let t=0,done=0;
+                    ph.steps.forEach(st=>{
+                      for(let i=0;i<st.tasks;i++){t++;if(d.proj.tasks[st.id]?.[i])done++;}
+                    });
+                    const p=t===0?0:Math.round((done/t)*100);
+                    return `<div title="Phase ${ph.id}: ${ph.label} — ${p}%" style="flex:1;height:5px;background:#1e1e1e;border-radius:2px;overflow:hidden;"><div style="height:100%;width:${p}%;background:${p===100?d.cl.color:'#444'};border-radius:2px;transition:width 0.3s;"></div></div>`;
+                  }).join('')}
+                </div>
+                <div style="display:flex;gap:3px;">
+                  ${d.cl.phases.map((ph,i)=>`<div style="flex:1;text-align:center;font-family:'Barlow Condensed',sans-serif;font-size:8px;color:#2a2a2a;">P${i+1}</div>`).join('')}
+                </div>
+              </div>
+            </div>
+
+            <!-- Warnings -->
+            ${d.warnings.length>0?`
+              <div style="padding:10px 16px;background:#1a0808;border-bottom:1px solid #2a1010;">
+                <div style="font-family:'Barlow Condensed',sans-serif;font-size:10px;color:#C0392B;letter-spacing:1.5px;margin-bottom:6px;font-weight:700;">⚠ WARNINGS</div>
+                ${d.warnings.map(w=>`
+                  <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;">
+                    <span style="color:${w.type==='critical'?'#C0392B':'#E67E22'};font-size:11px;flex-shrink:0;">${w.type==='critical'?'⛔':'▲'}</span>
+                    <span style="font-size:11px;color:#aa6655;line-height:1.4;">${w.msg}</span>
+                  </div>
+                `).join('')}
+              </div>
+            `:''}
+
+            <!-- Step details (expandable) -->
+            <div style="padding:10px 16px;">
+              <button onclick="toggleDetails('${d.cl.key}_${d.pid}')" style="background:none;border:none;color:#555;font-family:'Barlow Condensed',sans-serif;font-size:11px;letter-spacing:1px;cursor:pointer;padding:0;" id="btn_${d.cl.key}_${d.pid}">▼ SHOW STEP DETAILS</button>
+              <div id="details_${d.cl.key}_${d.pid}" style="display:none;margin-top:10px;">
+                ${d.cl.phases.map(ph=>{
+                  const phaseSteps = ph.steps.map(st=>{
+                    const taskArr = d.proj.tasks[st.id]||[];
+                    const done = taskArr.filter(Boolean).length;
+                    const total = st.tasks;
+                    const pct = total===0?0:Math.round((done/total)*100);
+                    const sd = d.proj.steps?.[st.id]||{};
+                    const hasNotes = sd.notes||sd.startDate||sd.completeDate;
+                    return `
+                      <div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #1a1a1a;">
+                        <div style="width:20px;height:20px;border-radius:4px;background:${pct===100?d.cl.color:'#1e1e1e'};border:1px solid ${pct===100?d.cl.color:'#2a2a2a'};display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:10px;color:${pct===100?'#fff':'#555'};flex-shrink:0;">${pct===100?'✓':st.num}</div>
+                        <div style="flex:1;min-width:0;">
+                          <div style="font-family:'Barlow Condensed',sans-serif;font-size:12px;color:${pct===100?'#555':'#bbb'};text-decoration:${pct===100?'line-through':'none'};">${st.title.toUpperCase()}</div>
+                          ${hasNotes?`<div style="font-size:10px;color:#555;margin-top:1px;">${sd.startDate?'▶ '+sd.startDate:''} ${sd.completeDate?'✓ '+sd.completeDate:''} ${sd.notes?'· "'+sd.notes.substring(0,50)+(sd.notes.length>50?'...':'')+'"':''}</div>`:''}
+                        </div>
+                        <div style="font-family:'Barlow Condensed',sans-serif;font-size:11px;color:${pct===100?d.cl.color:'#444'};flex-shrink:0;">${done}/${total}</div>
+                      </div>
+                    `;
+                  }).join('');
+
+                  let phT=0,phD=0;
+                  ph.steps.forEach(st=>{for(let i=0;i<st.tasks;i++){phT++;if(d.proj.tasks[st.id]?.[i])phD++;}});
+                  const phPct=phT===0?0:Math.round((phD/phT)*100);
+
+                  return `
+                    <div style="margin-bottom:10px;">
+                      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                        <span style="font-family:'Barlow Condensed',sans-serif;font-size:11px;color:#666;letter-spacing:1px;font-weight:700;">${ph.label.toUpperCase()}</span>
+                        <span style="font-family:'Barlow Condensed',sans-serif;font-size:11px;color:${phPct===100?d.cl.color:'#444'};">${phPct}%</span>
+                      </div>
+                      ${phaseSteps}
+                    </div>
+                  `;
+                }).join('')}
+              </div>
+            </div>
+          </div>
+        `).join('')}
+
+        <div style="height:40px;"></div>
+      </div>
+    </div>
+  `;
+}
+
+function toggleDetails(id) {
+  const el = document.getElementById('details_'+id);
+  const btn = document.getElementById('btn_'+id);
+  if(el.style.display==='none'){
+    el.style.display='block';
+    btn.textContent='▲ HIDE STEP DETAILS';
+  } else {
+    el.style.display='none';
+    btn.textContent='▼ SHOW STEP DETAILS';
+  }
+}
+
+function setFilter(f){
+  window._dashFilter=f;
+  render();
+}
+
+function setSearch(v){
+  window._dashSearch=v;
+  render();
+}
+
+function refreshDash(){
+  render();
+}
+
+// Initial render
+window._dashFilter='all';
+window._dashSearch='';
+render();
+</script>
+</body>
+</html>

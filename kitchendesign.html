@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="theme-color" content="#111111"/>
+  <title>WRB Kitchen Design & Cabinet Sales</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0;}
+    html,body,#root{height:100%;}
+    body{background:#0f0f0f;font-family:'Barlow',sans-serif;-webkit-font-smoothing:antialiased;}
+    ::-webkit-scrollbar{width:4px;}
+    ::-webkit-scrollbar-track{background:#1a1a1a;}
+    ::-webkit-scrollbar-thumb{background:#2E86C1;border-radius:2px;}
+    @keyframes slideDown{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes checkPop{0%{transform:scale(1)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+    @keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+    .anim-down{animation:slideDown 0.2s ease forwards;}
+    .anim-up{animation:slideUp 0.35s ease forwards;}
+    .anim-fade{animation:fadeIn 0.3s ease;}
+    .check-pop{animation:checkPop 0.25s ease;}
+    input[type="date"]::-webkit-calendar-picker-indicator{filter:invert(0.6);}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const ACCENT  = "#2E86C1";
+const ACCENT2 = "#5DADE2";
+
+const PHASES = [
+  { id:"ph1", label:"LEAD & INITIAL INQUIRY", num:1, steps:[
+    { id:"kd1", num:1, title:"Lead Intake & Qualification", type:"normal", tasks:[
+      "Log lead source: website, referral, walk-in, social, or other",
+      "Record client name, phone, email, and preferred contact method",
+      "Capture project description: full kitchen, partial, cabinets only",
+      "Confirm approximate budget range",
+      "Confirm project timeline / target start date",
+      "Schedule initial consultation — confirm date and time with client",
+    ]},
+  ]},
+  { id:"ph2", label:"DESIGN CONSULTATION", num:2, steps:[
+    { id:"kd2", num:2, title:"Initial Design Consultation", type:"normal", tasks:[
+      "Review client wish list: style, layout preferences, must-haves",
+      "Review inspiration photos brought by client",
+      "Discuss cabinet door styles, finishes, and wood species",
+      "Discuss countertop material options",
+      "Discuss hardware, lighting, and appliance preferences",
+      "Confirm scope: full gut vs. cabinet replacement only",
+      "Set expectation on design timeline and process",
+    ]},
+    { id:"kd3", num:3, title:"Measurements & Site Visit", type:"critical", tasks:[
+      "Measure all walls: height, width, and depth of existing layout",
+      "Note all window and door locations with dimensions",
+      "Note all plumbing, electrical, and gas locations",
+      "Photograph existing kitchen — all 4 walls and ceiling",
+      "Confirm ceiling height and any soffits or obstructions",
+      "Note any structural walls or load-bearing elements",
+      "⛔ Do NOT begin design until measurements are verified on site",
+    ]},
+  ]},
+  { id:"ph3", label:"CABINET SELECTION & QUOTE", num:3, steps:[
+    { id:"kd4", num:4, title:"Design Presentation", type:"normal", tasks:[
+      "Prepare 2D or 3D kitchen layout using design software",
+      "Present minimum 2 layout options to client",
+      "Review cabinet line options with pricing tiers",
+      "Present countertop options with samples",
+      "Walk client through workflow and storage plan",
+      "Document all client feedback and revision requests",
+    ]},
+    { id:"kd5", num:5, title:"Cabinet Selection", type:"normal", tasks:[
+      "Cabinet line confirmed: brand, door style, finish, and wood species",
+      "All cabinet sizes confirmed against layout",
+      "Interior options selected: pull-outs, lazy susans, drawer organizers",
+      "Crown molding, light rail, toe kick style confirmed",
+      "Hardware style and finish confirmed",
+      "Confirm sink base size matches selected sink",
+      "All selections documented in writing and signed by client",
+    ]},
+    { id:"kd6", num:6, title:"Quote & Proposal", type:"warning", tasks:[
+      "Prepare detailed itemized quote: cabinets, install, hardware",
+      "Include countertop allowance or separate countertop quote",
+      "Include design fee if applicable",
+      "Include lead time estimate in proposal",
+      "Present quote to client — review line by line",
+      "⛔ Do NOT place order until client signs proposal and pays deposit",
+    ]},
+  ]},
+  { id:"ph4", label:"CONTRACT & DEPOSIT", num:4, steps:[
+    { id:"kd7", num:7, title:"Contract Signing", type:"normal", tasks:[
+      "Send contract to client — include full scope and payment schedule",
+      "Review cancellation and change order policy with client",
+      "Confirm client has reviewed all cabinet selections one final time",
+      "Contract signed by client — copy on file",
+      "Send signed copy to client via email",
+    ]},
+    { id:"kd8", num:8, title:"Deposit & Order Authorization", type:"warning", tasks:[
+      "Collect deposit per contract terms (typically 50%)",
+      "Deposit received and confirmed — record payment method",
+      "Send deposit receipt to client",
+      "⛔ DO NOT place cabinet order until deposit is received and cleared",
+      "Order authorization signed by designer/sales lead",
+    ]},
+  ]},
+  { id:"ph5", label:"ORDER & LEAD TIME TRACKING", num:5, steps:[
+    { id:"kd9", num:9, title:"Cabinet Order Placement", type:"normal", tasks:[
+      "Submit order to cabinet manufacturer — confirm order number",
+      "Send order confirmation to client with lead time estimate",
+      "Log order date and estimated delivery date",
+      "Confirm shipping address and delivery contact",
+      "Order accessories: hardware, moldings, organizers",
+      "Place countertop deposit if required by fabricator",
+    ]},
+    { id:"kd10", num:10, title:"Lead Time Tracking", type:"normal", tasks:[
+      "Follow up with manufacturer at 50% of lead time — confirm on schedule",
+      "Notify client of any delays immediately",
+      "Confirm delivery date with client 1 week out",
+      "Coordinate delivery date with installation crew",
+      "Confirm site is ready for delivery: cleared space, access confirmed",
+    ]},
+  ]},
+  { id:"ph6", label:"INSTALLATION SCHEDULING", num:6, steps:[
+    { id:"kd11", num:11, title:"Pre-Install Coordination", type:"normal", tasks:[
+      "Confirm installation crew availability against delivery date",
+      "Verify all rough-in work is complete: plumbing, electrical, drywall",
+      "Verify walls are painted before cabinet install",
+      "Verify subfloor is level — maximum 3/16\" over 10 feet",
+      "Confirm all appliances are on site or scheduled",
+      "Send install schedule confirmation to client",
+    ]},
+    { id:"kd12", num:12, title:"Install Schedule Confirmed", type:"inspection", tasks:[
+      "Install date confirmed with crew and client",
+      "Countertop template scheduled for day after cabinet install",
+      "Client notified of install day requirements: clear kitchen access",
+      "Final balance due date communicated to client",
+      "All materials staged and ready for install day",
+    ]},
+  ]},
+  { id:"ph7", label:"DELIVERY & INSTALLATION", num:7, steps:[
+    { id:"kd13", num:13, title:"Cabinet Delivery & Inspection", type:"critical", tasks:[
+      "Receive all cabinets — count boxes against packing list",
+      "Inspect every cabinet for damage before installer leaves",
+      "Document any damaged items with photos immediately",
+      "File damage claim with manufacturer same day if damage found",
+      "⛔ Do NOT begin installation with damaged cabinets — order replacements first",
+      "Stage cabinets in layout order for installer",
+    ]},
+    { id:"kd14", num:14, title:"Cabinet Installation", type:"normal", tasks:[
+      "Find high point of floor — use as starting point for base cabinets",
+      "Install upper cabinets first, then base cabinets",
+      "All cabinets level, plumb, and shimmed properly",
+      "All cabinets screwed to studs — minimum 2 screws per cabinet per stud",
+      "Install filler panels, scribe molding, and toe kicks",
+      "Install crown molding and light rail",
+      "All doors and drawers aligned — gaps consistent",
+      "Designer / sales lead final inspection before countertop template",
+    ]},
+  ]},
+  { id:"ph8", label:"FINAL WALKTHROUGH & PAYMENT", num:8, steps:[
+    { id:"kd15", num:15, title:"Final Walkthrough & Punch List", type:"normal", tasks:[
+      "Conduct final walkthrough with client after countertop installed",
+      "Inspect all cabinet doors: level, aligned, soft-close working",
+      "Inspect all drawers: smooth operation, no binding",
+      "Inspect all hardware: tight, aligned, consistent",
+      "Inspect countertop: level, no chips, caulk lines clean",
+      "Document all punch list items in writing with client signature",
+    ]},
+    { id:"kd16", num:16, title:"Closeout & Final Payment", type:"warning", tasks:[
+      "All punch list items completed and approved by client",
+      "Collect final balance payment",
+      "Send final receipt and warranty documentation to client",
+      "Provide cabinet care and maintenance instructions",
+      "⛔ Do NOT close project until final payment is collected",
+      "Send review request: Google / Houzz / referral ask",
+    ]},
+  ]},
+];
+
+const TYPE_CFG = {
+  normal:     { color:ACCENT,    bg:null,       badge:null },
+  warning:    { color:"#E8763A", bg:"#2a1a0a",  badge:"ACTION REQUIRED" },
+  inspection: { color:"#27AE60", bg:"#0a1a0f",  badge:"CONFIRM" },
+  critical:   { color:"#C0392B", bg:"#2a0a0a",  badge:"CRITICAL" },
+};
+
+const KEY_PMS      = "wrb_kd_pms_v1";
+const KEY_PROJECTS = (pm) => `wrb_kd_plist_${pm}`;
+const KEY_PROJECT  = (pm, pid) => `wrb_kd_proj_${pm}_${pid}`;
+
+function lsGet(k){ try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;} }
+function lsSet(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch{} }
+
+function freshProject(name, address) {
+  const tasks={},steps={};
+  PHASES.forEach(ph=>ph.steps.forEach(st=>{
+    tasks[st.id]=st.tasks.map(()=>false);
+    steps[st.id]={startDate:"",completeDate:"",notes:""};
+  }));
+  return{name,address,createdAt:new Date().toLocaleDateString(),tasks,steps,openPhases:{ph1:true},openSteps:{}};
+}
+function calcProgress(tasks){
+  let t=0,d=0;
+  PHASES.forEach(ph=>ph.steps.forEach(st=>st.tasks.forEach((_,i)=>{t++;if(tasks[st.id]?.[i])d++;})));
+  return t===0?0:Math.round((d/t)*100);
+}
+function phasePct(phase,tasks){
+  let t=0,d=0;
+  phase.steps.forEach(st=>st.tasks.forEach((_,i)=>{t++;if(tasks[st.id]?.[i])d++;}));
+  return t===0?0:Math.round((d/t)*100);
+}
+
+function Modal({title,onClose,children}){
+  return(
+    <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.9)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px",animation:"fadeIn 0.2s ease"}}>
+      <div onClick={e=>e.stopPropagation()} className="anim-up" style={{background:"#161616",border:"1px solid #2a2a2a",borderRadius:"12px",width:"100%",maxWidth:"440px",overflow:"hidden"}}>
+        <div style={{background:"#111",padding:"14px 18px",borderBottom:"1px solid #222",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"15px",color:"#e0e0e0",letterSpacing:"1px"}}>{title}</span>
+          <button onClick={onClose} style={{background:"none",border:"none",color:"#555",fontSize:"22px",cursor:"pointer",lineHeight:1,padding:"0 4px"}}>×</button>
+        </div>
+        <div style={{padding:"18px"}}>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function NotesModal({step,stepData,onSave,onClose}){
+  const [notes,setNotes]=useState(stepData.notes||"");
+  const [start,setStart]=useState(stepData.startDate||"");
+  const [complete,setComplete]=useState(stepData.completeDate||"");
+  const iStyle={width:"100%",background:"#0f0f0f",border:"1px solid #2a2a2a",borderRadius:"6px",padding:"8px 10px",color:"#ddd",fontSize:"13px",colorScheme:"dark",outline:"none",fontFamily:"'Barlow',sans-serif"};
+  return(
+    <Modal title={`STEP ${step.num} — ${step.title.toUpperCase()}`} onClose={onClose}>
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"14px"}}>
+        {[["START DATE",start,setStart],["COMPLETE DATE",complete,setComplete]].map(([l,v,s])=>(
+          <div key={l}>
+            <div style={{color:"#555",fontSize:"10px",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"1.5px",marginBottom:"5px"}}>{l}</div>
+            <input type="date" value={v} onChange={e=>s(e.target.value)} style={iStyle}/>
+          </div>
+        ))}
+      </div>
+      <div style={{color:"#555",fontSize:"10px",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"1.5px",marginBottom:"6px"}}>NOTES & CLIENT DETAILS</div>
+      <textarea value={notes} onChange={e=>setNotes(e.target.value)} rows={4} placeholder="Client notes, selection details, follow-up items..."
+        style={{...iStyle,resize:"vertical",lineHeight:1.6,marginBottom:"16px",display:"block"}}/>
+      <div style={{display:"flex",gap:"8px",justifyContent:"flex-end"}}>
+        <button onClick={onClose} style={{padding:"8px 14px",background:"none",border:"1px solid #333",borderRadius:"6px",color:"#888",fontSize:"12px",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"1px",cursor:"pointer"}}>CANCEL</button>
+        <button onClick={()=>{onSave({notes,startDate:start,completeDate:complete});onClose();}} style={{padding:"8px 18px",background:ACCENT,border:"none",borderRadius:"6px",color:"#fff",fontSize:"12px",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,letterSpacing:"1px",cursor:"pointer"}}>SAVE</button>
+      </div>
+    </Modal>
+  );
+}
+
+function StepRow({step,tasks,stepData,onToggleTask,onSaveStep,isOpen,onToggleOpen}){
+  const cfg=TYPE_CFG[step.type]||TYPE_CFG.normal;
+  const done=tasks.filter(Boolean).length,total=tasks.length;
+  const pct=total===0?0:Math.round((done/total)*100),full=pct===100;
+  const [showNotes,setShowNotes]=useState(false);
+  const [animIdx,setAnimIdx]=useState(null);
+  const hasExtra=stepData.notes||stepData.startDate||stepData.completeDate;
+  return(
+    <div style={{borderBottom:"1px solid #1c1c1c"}}>
+      <div onClick={onToggleOpen} style={{display:"flex",alignItems:"center",gap:"10px",padding:"11px 14px",cursor:"pointer",background:isOpen?"#1a1a1a":"transparent",transition:"background 0.15s",WebkitTapHighlightColor:"transparent"}}>
+        <div style={{minWidth:"26px",height:"26px",borderRadius:"5px",background:full?ACCENT:"#1e1e1e",border:`1px solid ${full?ACCENT:"#2e2e2e"}`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:"12px",color:full?"#fff":"#666",flexShrink:0,transition:"all 0.2s"}}>
+          {full?"✓":step.num}
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{display:"flex",alignItems:"center",gap:"6px",flexWrap:"wrap",marginBottom:"4px"}}>
+            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:"13px",color:full?"#555":"#ddd",textDecoration:full?"line-through":"none",letterSpacing:"0.5px"}}>{step.title.toUpperCase()}</span>
+            {cfg.badge&&<span style={{fontSize:"9px",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,letterSpacing:"1px",padding:"2px 5px",borderRadius:"3px",background:cfg.bg||"#222",color:cfg.color,border:`1px solid ${cfg.color}44`}}>{cfg.badge}</span>}
+          </div>
+          <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+            <div style={{flex:1,height:"2px",background:"#222",borderRadius:"1px",overflow:"hidden"}}>
+              <div style={{height:"100%",width:`${pct}%`,background:full?ACCENT:"#444",transition:"width 0.3s",borderRadius:"1px"}}/>
+            </div>
+            <span style={{fontSize:"10px",color:"#444",fontFamily:"'Barlow Condensed',sans-serif",minWidth:"28px"}}>{done}/{total}</span>
+          </div>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:"6px",flexShrink:0}}>
+          {hasExtra&&<div style={{width:"5px",height:"5px",borderRadius:"50%",background:ACCENT}}/>}
+          <span style={{color:"#333",fontSize:"15px",display:"inline-block",transform:isOpen?"rotate(90deg)":"none",transition:"transform 0.2s"}}>›</span>
+        </div>
+      </div>
+      {isOpen&&(
+        <div className="anim-down" style={{background:"#0f0f0f",paddingBottom:"6px"}}>
+          {step.tasks.map((task,i)=>{
+            const checked=tasks[i];
+            return(
+              <div key={i} onClick={()=>{setAnimIdx(i);onToggleTask(i);setTimeout(()=>setAnimIdx(null),300);}}
+                style={{display:"flex",alignItems:"flex-start",gap:"10px",padding:"8px 14px 8px 48px",cursor:"pointer",WebkitTapHighlightColor:"transparent"}}>
+                <div className={animIdx===i?"check-pop":""} style={{width:"18px",height:"18px",borderRadius:"4px",border:`1.5px solid ${checked?ACCENT:"#2e2e2e"}`,background:checked?ACCENT:"transparent",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.15s",flexShrink:0,marginTop:"1px"}}>
+                  {checked&&<span style={{color:"#fff",fontSize:"11px"}}>✓</span>}
+                </div>
+                <span style={{fontSize:"13px",color:checked?"#444":"#aaa",textDecoration:checked?"line-through":"none",lineHeight:1.5,transition:"color 0.15s"}}>
+                  {task.startsWith("⛔")?<><span style={{color:"#C0392B"}}>⛔ </span><strong style={{color:checked?"#444":"#E74C3C"}}>{task.slice(2)}</strong></>:task}
+                </span>
+              </div>
+            );
+          })}
+          <div style={{margin:"6px 14px 6px 48px",display:"flex",gap:"6px",alignItems:"center",flexWrap:"wrap"}}>
+            {stepData.startDate&&<span style={{fontSize:"10px",color:"#555",background:"#161616",padding:"2px 8px",borderRadius:"3px",border:"1px solid #222"}}>▶ {stepData.startDate}</span>}
+            {stepData.completeDate&&<span style={{fontSize:"10px",color:"#555",background:"#161616",padding:"2px 8px",borderRadius:"3px",border:"1px solid #222"}}>✓ {stepData.completeDate}</span>}
+            {stepData.notes&&<span style={{fontSize:"11px",color:"#666",fontStyle:"italic",maxWidth:"200px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>"{stepData.notes}"</span>}
+            <button onClick={e=>{e.stopPropagation();setShowNotes(true);}} style={{marginLeft:"auto",padding:"4px 10px",background:"none",border:"1px solid #2a2a2a",borderRadius:"4px",color:"#666",fontSize:"10px",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"1px",cursor:"pointer"}}>
+              {hasExtra?"EDIT":"+ NOTES"}
+            </button>
+          </div>
+        </div>
+      )}
+      {showNotes&&<NotesModal step={step} stepData={stepData} onSave={d=>onSaveStep(step.id,d)} onClose={()=>setShowNotes(false)}/>}
+    </div>
+  );
+}
+
+function PhaseCard({phase,tasks,steps,onToggleTask,onSaveStep,isOpen,onToggle,openSteps,onToggleStep}){
+  const pct=phasePct(phase,tasks),full=pct===100;
+  return(
+    <div style={{background:"#141414",border:`1px solid ${full?ACCENT+"44":"#1e1e1e"}`,borderRadius:"10px",overflow:"hidden",marginBottom:"8px",transition:"border-color 0.3s"}}>
+      <div onClick={onToggle} style={{padding:"13px 14px",cursor:"pointer",display:"flex",alignItems:"center",gap:"10px",background:isOpen?"#1a1a1a":"transparent",transition:"background 0.15s",WebkitTapHighlightColor:"transparent"}}>
+        <div style={{width:"32px",height:"32px",borderRadius:"7px",background:full?ACCENT:"#1a1a1a",border:`2px solid ${full?ACCENT:"#2a2a2a"}`,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"14px",color:full?"#fff":"#555",flexShrink:0,transition:"all 0.3s"}}>
+          {full?"✓":phase.num}
+        </div>
+        <div style={{flex:1,minWidth:0}}>
+          <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"14px",color:"#ddd",letterSpacing:"1px",marginBottom:"5px"}}>PHASE {phase.num} — {phase.label}</div>
+          <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+            <div style={{flex:1,height:"4px",background:"#1e1e1e",borderRadius:"2px",overflow:"hidden"}}>
+              <div style={{height:"100%",width:`${pct}%`,background:full?ACCENT:`linear-gradient(90deg,#1a4f72,${ACCENT})`,transition:"width 0.4s",borderRadius:"2px"}}/>
+            </div>
+            <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:"12px",color:full?ACCENT:"#444",minWidth:"32px",textAlign:"right"}}>{pct}%</span>
+          </div>
+        </div>
+        <span style={{color:"#333",fontSize:"18px",display:"inline-block",transform:isOpen?"rotate(90deg)":"none",transition:"transform 0.2s",flexShrink:0}}>›</span>
+      </div>
+      {isOpen&&(
+        <div className="anim-down">
+          {phase.steps.map(step=>(
+            <StepRow key={step.id} step={step}
+              tasks={tasks[step.id]||[]} stepData={steps[step.id]||{startDate:"",completeDate:"",notes:""}}
+              onToggleTask={i=>onToggleTask(step.id,i)} onSaveStep={onSaveStep}
+              isOpen={!!openSteps[step.id]} onToggleOpen={()=>onToggleStep(step.id)}/>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProjectView({pm,project,projectId,onSave,onBack}){
+  const [data,setData]=useState(project);
+  const timer=useRef(null);
+  useEffect(()=>{clearTimeout(timer.current);timer.current=setTimeout(()=>{lsSet(KEY_PROJECT(pm,projectId),data);onSave(data);},400);},[data]);
+  const toggleTask=(sid,i)=>setData(p=>({...p,tasks:{...p.tasks,[sid]:p.tasks[sid].map((v,j)=>j===i?!v:v)}}));
+  const saveStep=(sid,d)=>setData(p=>({...p,steps:{...p.steps,[sid]:{...p.steps[sid],...d}}}));
+  const togglePhase=id=>setData(p=>({...p,openPhases:{...p.openPhases,[id]:!p.openPhases[id]}}));
+  const toggleStep=id=>setData(p=>({...p,openSteps:{...p.openSteps,[id]:!p.openSteps[id]}}));
+  const overall=calcProgress(data.tasks);
+  const allSteps=PHASES.flatMap(p=>p.steps);
+  const doneTasks=PHASES.flatMap(p=>p.steps.flatMap(s=>s.tasks.map((_,i)=>data.tasks[s.id]?.[i]))).filter(Boolean).length;
+  const totalTasks=PHASES.flatMap(p=>p.steps.flatMap(s=>s.tasks)).length;
+  const doneSteps=allSteps.filter(s=>data.tasks[s.id]?.every(Boolean)).length;
+  const donePhases=PHASES.filter(p=>phasePct(p,data.tasks)===100).length;
+  return(
+    <div style={{minHeight:"100vh",background:"#0f0f0f"}}>
+      <div style={{background:"#111",borderBottom:`2px solid ${ACCENT}`,position:"sticky",top:0,zIndex:100}}>
+        <div style={{maxWidth:"680px",margin:"0 auto",padding:"10px 14px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"9px"}}>
+            <button onClick={onBack} style={{background:"none",border:"none",color:ACCENT,fontSize:"26px",cursor:"pointer",padding:"0",lineHeight:1,WebkitTapHighlightColor:"transparent"}}>‹</button>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"16px",color:"#fff",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",lineHeight:1.2}}>{data.name}</div>
+              {data.address&&<div style={{fontSize:"11px",color:"#555",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{data.address}</div>}
+            </div>
+            <div style={{background:ACCENT,borderRadius:"6px",padding:"4px 10px",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"14px",color:"#fff",flexShrink:0}}>{overall}%</div>
+          </div>
+          <div style={{height:"5px",background:"#1e1e1e",borderRadius:"3px",overflow:"hidden",marginBottom:"7px"}}>
+            <div style={{height:"100%",width:`${overall}%`,background:`linear-gradient(90deg,#1a4f72,${ACCENT},${ACCENT2})`,transition:"width 0.5s",borderRadius:"3px"}}/>
+          </div>
+          <div style={{display:"flex",gap:"14px",alignItems:"center"}}>
+            {[[`${doneTasks}/${totalTasks}`,"TASKS"],[`${doneSteps}/${allSteps.length}`,"STEPS"],[`${donePhases}/${PHASES.length}`,"PHASES"]].map(([v,l])=>(
+              <div key={l} style={{display:"flex",alignItems:"baseline",gap:"3px"}}>
+                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:"13px",color:ACCENT}}>{v}</span>
+                <span style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:"10px",color:"#444",letterSpacing:"1px"}}>{l}</span>
+              </div>
+            ))}
+            <span style={{marginLeft:"auto",fontFamily:"'Barlow Condensed',sans-serif",fontSize:"10px",color:"#333",letterSpacing:"1px"}}>DESIGNER: {pm.toUpperCase()}</span>
+          </div>
+        </div>
+      </div>
+      <div style={{maxWidth:"680px",margin:"0 auto",padding:"14px"}}>
+        {PHASES.map(phase=>(
+          <PhaseCard key={phase.id} phase={phase} tasks={data.tasks} steps={data.steps}
+            onToggleTask={toggleTask} onSaveStep={saveStep}
+            isOpen={!!data.openPhases[phase.id]} onToggle={()=>togglePhase(phase.id)}
+            openSteps={data.openSteps} onToggleStep={toggleStep}/>
+        ))}
+        {overall===100&&(
+          <div className="anim-fade" style={{background:`linear-gradient(135deg,#061422,#0a2040)`,border:`1px solid ${ACCENT}`,borderRadius:"10px",padding:"24px",textAlign:"center",marginTop:"8px"}}>
+            <div style={{fontSize:"32px",marginBottom:"8px"}}>🎉</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"22px",color:ACCENT,letterSpacing:"2px",marginBottom:"4px"}}>PROJECT SOLD & CLOSED</div>
+            <div style={{color:"#666",fontSize:"13px"}}>All stages complete. Great work, {pm}!</div>
+          </div>
+        )}
+        <div style={{height:"40px"}}/>
+      </div>
+    </div>
+  );
+}
+
+function ProjectList({pm,projects,onSelect,onAdd,onDelete,onSwitchPM}){
+  const [showAdd,setShowAdd]=useState(false);
+  const [name,setName]=useState("");
+  const [addr,setAddr]=useState("");
+  function handleAdd(){if(!name.trim())return;onAdd(name.trim(),addr.trim());setName("");setAddr("");setShowAdd(false);}
+  return(
+    <div style={{minHeight:"100vh",background:"#0f0f0f"}}>
+      <div style={{background:"#111",borderBottom:`2px solid ${ACCENT}`}}>
+        <div style={{maxWidth:"600px",margin:"0 auto",padding:"13px 14px",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+            <div style={{background:ACCENT,width:"36px",height:"36px",borderRadius:"8px",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"15px",color:"#fff",flexShrink:0}}>WRB</div>
+            <div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"16px",color:"#fff",letterSpacing:"1px",lineHeight:1.1}}>KITCHEN DESIGN & SALES</div>
+              <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:"10px",color:ACCENT,letterSpacing:"2px"}}>WR BUILDERS INC</div>
+            </div>
+          </div>
+          <button onClick={onSwitchPM} style={{background:"none",border:"1px solid #2a2a2a",borderRadius:"6px",padding:"6px 12px",color:"#555",fontSize:"10px",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"1px",cursor:"pointer",WebkitTapHighlightColor:"transparent"}}>SWITCH</button>
+        </div>
+      </div>
+      <div style={{maxWidth:"600px",margin:"0 auto",padding:"16px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"18px",padding:"13px 14px",background:"#141414",border:"1px solid #1e1e1e",borderRadius:"8px"}}>
+          <div style={{width:"38px",height:"38px",borderRadius:"50%",background:ACCENT,display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"17px",color:"#fff",flexShrink:0}}>{pm.charAt(0).toUpperCase()}</div>
+          <div style={{flex:1}}>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:"16px",color:"#e0e0e0"}}>{pm}</div>
+            <div style={{fontSize:"11px",color:"#444"}}>{projects.length} active client{projects.length!==1?"s":""}</div>
+          </div>
+          <button onClick={()=>setShowAdd(true)} style={{background:ACCENT,border:"none",borderRadius:"7px",padding:"9px 16px",color:"#fff",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:"13px",letterSpacing:"1px",cursor:"pointer",WebkitTapHighlightColor:"transparent"}}>+ NEW CLIENT</button>
+        </div>
+        {projects.length===0?(
+          <div style={{textAlign:"center",padding:"56px 0"}}>
+            <div style={{fontSize:"36px",marginBottom:"12px"}}>🎨</div>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:"15px",letterSpacing:"1px",color:"#333",marginBottom:"6px"}}>NO CLIENTS YET</div>
+            <div style={{fontSize:"12px",color:"#2a2a2a"}}>Tap + NEW CLIENT to add your first project</div>
+          </div>
+        ):(
+          <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+            {projects.map(proj=>{
+              const pct=calcProgress(proj.data.tasks),full=pct===100;
+              return(
+                <div key={proj.id} onClick={()=>onSelect(proj.id)} style={{background:"#141414",border:`1px solid ${full?ACCENT+"44":"#1e1e1e"}`,borderRadius:"10px",padding:"14px",cursor:"pointer",WebkitTapHighlightColor:"transparent"}}>
+                  <div style={{display:"flex",alignItems:"flex-start",gap:"10px",marginBottom:"10px"}}>
+                    <div style={{flex:1,minWidth:0}}>
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:"15px",color:"#e0e0e0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",marginBottom:"2px"}}>{proj.data.name}</div>
+                      {proj.data.address&&<div style={{fontSize:"11px",color:"#555",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{proj.data.address}</div>}
+                      <div style={{fontSize:"10px",color:"#2a2a2a",marginTop:"2px",fontFamily:"'Barlow Condensed',sans-serif"}}>Started {proj.data.createdAt}</div>
+                    </div>
+                    <div style={{display:"flex",alignItems:"center",gap:"8px",flexShrink:0}}>
+                      {full&&<span style={{fontSize:"14px"}}>🎉</span>}
+                      <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"22px",color:full?ACCENT:"#ddd",lineHeight:1}}>{pct}%</div>
+                      <button onClick={e=>{e.stopPropagation();if(window.confirm(`Delete "${proj.data.name}"?`))onDelete(proj.id);}} style={{background:"none",border:"1px solid #2a2a2a",borderRadius:"5px",color:"#444",padding:"5px 9px",fontSize:"10px",cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",WebkitTapHighlightColor:"transparent"}}>DEL</button>
+                    </div>
+                  </div>
+                  <div style={{display:"flex",gap:"3px",marginBottom:"3px"}}>
+                    {PHASES.map(ph=>{const p=phasePct(ph,proj.data.tasks);return(
+                      <div key={ph.id} style={{flex:1,height:"4px",background:"#1e1e1e",borderRadius:"2px",overflow:"hidden"}}>
+                        <div style={{height:"100%",width:`${p}%`,background:p===100?ACCENT:"#444",borderRadius:"2px"}}/>
+                      </div>
+                    );})}
+                  </div>
+                  <div style={{display:"flex",gap:"3px"}}>
+                    {PHASES.map(ph=><div key={ph.id} style={{flex:1,textAlign:"center",fontFamily:"'Barlow Condensed',sans-serif",fontSize:"8px",color:"#2a2a2a"}}>P{ph.num}</div>)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      {showAdd&&(
+        <Modal title="NEW CLIENT PROJECT" onClose={()=>setShowAdd(false)}>
+          <div style={{marginBottom:"12px"}}>
+            <div style={{color:"#555",fontSize:"10px",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"1.5px",marginBottom:"6px"}}>CLIENT NAME *</div>
+            <input autoFocus value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleAdd()} placeholder="e.g. Johnson Kitchen Design"
+              style={{width:"100%",background:"#0f0f0f",border:"1px solid #2a2a2a",borderRadius:"6px",padding:"10px 12px",color:"#ddd",fontSize:"14px",outline:"none",fontFamily:"'Barlow',sans-serif",marginBottom:"12px"}}/>
+            <div style={{color:"#555",fontSize:"10px",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"1.5px",marginBottom:"6px"}}>CLIENT ADDRESS (OPTIONAL)</div>
+            <input value={addr} onChange={e=>setAddr(e.target.value)} onKeyDown={e=>e.key==="Enter"&&handleAdd()} placeholder="e.g. 123 Main St, Newton MA"
+              style={{width:"100%",background:"#0f0f0f",border:"1px solid #2a2a2a",borderRadius:"6px",padding:"10px 12px",color:"#ddd",fontSize:"14px",outline:"none",fontFamily:"'Barlow',sans-serif"}}/>
+          </div>
+          <div style={{display:"flex",gap:"8px",justifyContent:"flex-end",marginTop:"16px"}}>
+            <button onClick={()=>setShowAdd(false)} style={{padding:"9px 14px",background:"none",border:"1px solid #333",borderRadius:"6px",color:"#888",fontSize:"12px",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"1px",cursor:"pointer"}}>CANCEL</button>
+            <button onClick={handleAdd} style={{padding:"9px 20px",background:name.trim()?ACCENT:"#1a2a3a",border:"none",borderRadius:"6px",color:name.trim()?"#fff":"#555",fontSize:"12px",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,letterSpacing:"1px",cursor:"pointer",transition:"all 0.2s"}}>CREATE CLIENT</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+function PMLogin({onSelect}){
+  const [pms,setPMs]=useState(null);
+  const [name,setName]=useState("");
+  const [adding,setAdding]=useState(false);
+  useEffect(()=>{setPMs(lsGet(KEY_PMS)||[]);},[]);
+  function addPM(){
+    const n=name.trim();if(!n||!pms)return;
+    const exists=pms.find(p=>p.toLowerCase()===n.toLowerCase());
+    if(!exists){const u=[...pms,n];lsSet(KEY_PMS,u);setPMs(u);}
+    setName("");setAdding(false);onSelect(exists||n);
+  }
+  if(pms===null)return<div style={{minHeight:"100vh",background:"#0f0f0f",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{color:"#333",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"3px",fontSize:"13px"}}>LOADING...</span></div>;
+  return(
+    <div style={{minHeight:"100vh",background:"#0f0f0f",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"24px"}}>
+      <div style={{marginBottom:"32px",textAlign:"center"}}>
+        <div style={{background:ACCENT,width:"60px",height:"60px",borderRadius:"14px",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"22px",color:"#fff",margin:"0 auto 14px"}}>WRB</div>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"20px",color:"#fff",letterSpacing:"2px",lineHeight:1.3}}>KITCHEN DESIGN</div>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,fontSize:"20px",color:"#fff",letterSpacing:"2px",lineHeight:1.3}}>& CABINET SALES</div>
+        <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:"11px",color:ACCENT,letterSpacing:"3px",marginTop:"6px"}}>WR BUILDERS INC</div>
+      </div>
+      <div style={{width:"100%",maxWidth:"360px"}}>
+        {pms.length>0&&(
+          <>
+            <div style={{fontFamily:"'Barlow Condensed',sans-serif",fontSize:"10px",color:"#333",letterSpacing:"2px",marginBottom:"10px",textAlign:"center"}}>SELECT YOUR NAME</div>
+            <div style={{display:"flex",flexDirection:"column",gap:"6px",marginBottom:"10px"}}>
+              {pms.map(pm=>(
+                <button key={pm} onClick={()=>onSelect(pm)} style={{width:"100%",background:"#141414",border:"1px solid #1e1e1e",borderRadius:"8px",padding:"13px 16px",color:"#ddd",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:"16px",letterSpacing:"1px",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",gap:"12px",WebkitTapHighlightColor:"transparent"}}>
+                  <div style={{width:"32px",height:"32px",borderRadius:"50%",background:ACCENT,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"14px",fontWeight:800,color:"#fff",flexShrink:0}}>{pm.charAt(0).toUpperCase()}</div>
+                  {pm}
+                  <span style={{marginLeft:"auto",color:"#333",fontSize:"18px"}}>›</span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        {adding?(
+          <div style={{background:"#141414",border:"1px solid #2a2a2a",borderRadius:"8px",padding:"14px"}}>
+            <input autoFocus value={name} onChange={e=>setName(e.target.value)} onKeyDown={e=>e.key==="Enter"&&addPM()} placeholder="Enter your name..."
+              style={{width:"100%",background:"#0f0f0f",border:"1px solid #2a2a2a",borderRadius:"6px",padding:"11px 12px",color:"#ddd",fontSize:"15px",outline:"none",fontFamily:"'Barlow',sans-serif",marginBottom:"10px"}}/>
+            <div style={{display:"flex",gap:"6px"}}>
+              <button onClick={()=>{setAdding(false);setName("");}} style={{flex:1,padding:"10px",background:"none",border:"1px solid #2a2a2a",borderRadius:"6px",color:"#666",fontSize:"12px",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"1px",cursor:"pointer"}}>CANCEL</button>
+              <button onClick={addPM} style={{flex:2,padding:"10px",background:name.trim()?ACCENT:"#1a2a3a",border:"none",borderRadius:"6px",color:name.trim()?"#fff":"#555",fontSize:"12px",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,letterSpacing:"1px",cursor:"pointer"}}>CONTINUE →</button>
+            </div>
+          </div>
+        ):(
+          <button onClick={()=>setAdding(true)} style={{width:"100%",background:"none",border:"1px dashed #2a2a2a",borderRadius:"8px",padding:"13px",color:"#444",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700,fontSize:"13px",letterSpacing:"1.5px",cursor:"pointer",WebkitTapHighlightColor:"transparent"}}>+ ADD DESIGNER / SALES REP</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function App(){
+  const [pm,setPM]=useState(()=>sessionStorage.getItem("wrb_kd_session")||null);
+  const [projects,setProjects]=useState(null);
+  const [activeId,setActiveId]=useState(null);
+  useEffect(()=>{
+    if(!pm){setProjects(null);setActiveId(null);return;}
+    sessionStorage.setItem("wrb_kd_session",pm);
+    const ids=lsGet(KEY_PROJECTS(pm))||[];
+    setProjects(ids.map(id=>({id,data:lsGet(KEY_PROJECT(pm,id))})).filter(p=>p.data!==null));
+  },[pm]);
+  function addProject(name,address){
+    const id=`p_${Date.now()}`,data=freshProject(name,address);
+    lsSet(KEY_PROJECT(pm,id),data);
+    const ex=lsGet(KEY_PROJECTS(pm))||[];
+    lsSet(KEY_PROJECTS(pm),[...ex,id]);
+    setProjects(prev=>[...(prev||[]),{id,data}]);
+    setActiveId(id);
+  }
+  function deleteProject(id){
+    const u=projects.filter(p=>p.id!==id);
+    setProjects(u);lsSet(KEY_PROJECTS(pm),u.map(p=>p.id));
+  }
+  function updateProject(id,data){setProjects(prev=>prev.map(p=>p.id===id?{...p,data}:p));}
+  function switchPM(){sessionStorage.removeItem("wrb_kd_session");setPM(null);}
+  if(!pm)return<PMLogin onSelect={setPM}/>;
+  if(!projects)return<div style={{minHeight:"100vh",background:"#0f0f0f",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{color:"#333",fontFamily:"'Barlow Condensed',sans-serif",letterSpacing:"3px",fontSize:"13px"}}>LOADING...</span></div>;
+  if(activeId){
+    const proj=projects.find(p=>p.id===activeId);
+    if(!proj){setActiveId(null);return null;}
+    return<ProjectView pm={pm} project={proj.data} projectId={proj.id} onSave={d=>updateProject(proj.id,d)} onBack={()=>setActiveId(null)}/>;
+  }
+  return<ProjectList pm={pm} projects={projects} onSelect={setActiveId} onAdd={addProject} onDelete={deleteProject} onSwitchPM={switchPM}/>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
